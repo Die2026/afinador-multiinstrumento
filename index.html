@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Afinador Multiinstrumento Profesional</title>
+  <meta name="description" content="Afinador de instrumentos musicales en tiempo real. Soporta guitarra, bajo, ukelele, mandolina, banjo y lap steel.">
+  <meta name="theme-color" content="#0e0e10">
+  
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link rel="apple-touch-icon" href="logo.svg">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <main class="tuner-main">
+      
+      <!-- Chromatic Visor Section (Top Tape & Readout) -->
+      <section class="chromatic-section">
+        <div class="chromatic-tape-viewport">
+          <div class="center-line"></div>
+          <div class="chromatic-tape" id="chromatic-tape">
+            <!-- Dynamically populated from JS -->
+          </div>
+        </div>
+        
+        <!-- Integrated Sub-Display under the tape -->
+        <div class="chromatic-sub-display">
+          <div class="sub-note-name" id="sub-note-name">--</div>
+          <div class="sub-info-line">
+            <span id="sub-freq">ESPERANDO SONIDO</span>
+            <span class="sub-divider">•</span>
+            <span id="sub-cents">--</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tuning Reference / Strings Layout (Hidden in Chromatic mode) -->
+      <section class="strings-section" id="strings-section" style="display: none;">
+        <div class="tuning-title-bar">
+          <h4 id="active-tuning-name">AFINACIÓN</h4>
+          <p id="active-tuning-notes">Notas objetivo</p>
+        </div>
+        <div class="strings-container" id="strings-container">
+          <!-- Dynamically populated string target cards -->
+        </div>
+      </section>
+
+      <!-- Controls & Selectors (Bottom) -->
+      <section class="controls-section">
+        <div class="mic-controls">
+          <button id="btn-mic-toggle" class="btn btn-primary">
+            <svg class="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+            <span id="btn-mic-text">ACTIVAR MICRÓFONO</span>
+          </button>
+        </div>
+
+        <div class="selectors-grid">
+          <!-- Instrument Selector -->
+          <div class="selector-group">
+            <label for="select-instrument">INSTRUMENTO</label>
+            <div class="custom-select-wrapper">
+              <select id="select-instrument">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Tuning Families -->
+          <div class="selector-group">
+            <label for="select-standard">STANDARD</label>
+            <div class="custom-select-wrapper">
+              <select id="select-standard" class="tuning-family-select" data-family="standard">
+                <option value="">--</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="selector-group">
+            <label for="select-drop">DROP</label>
+            <div class="custom-select-wrapper">
+              <select id="select-drop" class="tuning-family-select" data-family="drop">
+                <option value="">--</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="selector-group">
+            <label for="select-open">OPEN</label>
+            <div class="custom-select-wrapper">
+              <select id="select-open" class="tuning-family-select" data-family="open">
+                <option value="">--</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="selector-group">
+            <label for="select-alternativas">ALTERNATIVAS</label>
+            <div class="custom-select-wrapper">
+              <select id="select-alternativas" class="tuning-family-select" data-family="alternativas">
+                <option value="">--</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="selector-group">
+            <label for="select-otras">OTRAS</label>
+            <div class="custom-select-wrapper">
+              <select id="select-otras" class="tuning-family-select" data-family="otras">
+                <option value="">--</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

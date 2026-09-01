@@ -1,0 +1,16 @@
+{
+  "short_name": "Afinador",
+  "name": "Afinador Multiinstrumento Profesional",
+  "icons": [
+    {
+      "src": "logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#0e0e10",
+  "theme_color": "#0e0e10",
+  "display": "standalone",
+  "orientation": "any"
+}

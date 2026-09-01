@@ -1,0 +1,19 @@
+{
+  "name": "instrument-tuner",
+  "version": "1.0.0",
+  "description": "Afinador Multiinstrumento Profesional PWA",
+  "type": "module",
+  "scripts": {
+    "dev": "npx -y http-server ."
+  },
+  "keywords": [
+    "tuner",
+    "guitar",
+    "bass",
+    "ukulele",
+    "pwa",
+    "web-audio"
+  ],
+  "author": "",
+  "license": "ISC"
+}
