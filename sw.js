@@ -5,9 +5,9 @@ const ASSETS = [
   "./style.css",
   "./logo.svg",
   "./manifest.json",
-  "./js/data.js",
-  "./js/audio.js",
-  "./js/app.js"
+  "./data.js",
+  "./audio.js",
+  "./app.js"
 ];
 
 // Install Service Worker and cache assets
