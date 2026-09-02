@@ -12,6 +12,7 @@ class AudioController {
     this.sampleRate = 44100;
     this.bufferSize = 2048; // Offers good low-frequency resolution (down to ~22Hz)
     this.buffer = new Float32Array(this.bufferSize);
+    this.byteBuffer = new Uint8Array(this.bufferSize);
     
     // For smoothing frequency readings
     this.frequencyHistory = [];
@@ -91,7 +92,16 @@ class AudioController {
       const updatePitch = () => {
         if (!this.isActive) return;
         
-        this.analyser.getFloat32TimeDomainData(this.buffer);
+        // Universal fallback for time-domain audio data
+        if (typeof this.analyser.getFloat32TimeDomainData === "function") {
+          this.analyser.getFloat32TimeDomainData(this.buffer);
+        } else if (typeof this.analyser.getByteTimeDomainData === "function") {
+          this.analyser.getByteTimeDomainData(this.byteBuffer);
+          for (let i = 0; i < this.bufferSize; i++) {
+            this.buffer[i] = (this.byteBuffer[i] - 128) / 128.0;
+          }
+        }
+
         const rawFrequency = this.autoCorrelate(this.buffer, this.sampleRate);
         
         let stableFrequency = -1;
@@ -130,22 +140,22 @@ class AudioController {
     }
 
     if (this.source) {
-      this.source.disconnect();
+      try { this.source.disconnect(); } catch (e) {}
       this.source = null;
     }
 
     if (this.lowpassFilter) {
-      this.lowpassFilter.disconnect();
+      try { this.lowpassFilter.disconnect(); } catch (e) {}
       this.lowpassFilter = null;
     }
 
     if (this.analyser) {
-      this.analyser.disconnect();
+      try { this.analyser.disconnect(); } catch (e) {}
       this.analyser = null;
     }
 
     if (this.audioContext && this.audioContext.state !== "closed") {
-      this.audioContext.close();
+      try { this.audioContext.close(); } catch (e) {}
       this.audioContext = null;
     }
   }
