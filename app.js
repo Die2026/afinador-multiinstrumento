@@ -297,7 +297,12 @@ class App {
       msg = "No se detectó ningún micrófono en este dispositivo.";
     } else if (err && err.name === "NotReadableError") {
       msg = "El micrófono está siendo usado por otra aplicación. Cerrala e intentá de nuevo.";
+    } else if (err && err.name === "UnsupportedError") {
+      msg = "Tu navegador no soporta Web Audio API. Probá con Chrome o Firefox.";
     }
+    
+    // Append raw error details for diagnosis
+    const rawDetail = err ? ` [${err.name}: ${err.message}]` : " [error desconocido]";
     
     // Reset button without triggering another stop cycle
     this.isRecording = false;
@@ -307,8 +312,8 @@ class App {
     this.audioController.stop();
     this.resetTunerUI();
 
-    // Show error banner instead of blocking alert
-    this.showErrorBanner(msg);
+    // Show error banner with full details
+    this.showErrorBanner(msg + rawDetail);
   }
 
   showErrorBanner(msg) {

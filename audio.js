@@ -26,6 +26,13 @@ class AudioController {
    */
   async start(onReady, onPitchDetected, onError) {
     try {
+      // 0. Guard: check getUserMedia support
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const err = new Error("getUserMedia no disponible en este navegador.");
+        err.name = "UnsupportedError";
+        throw err;
+      }
+
       // 1. Get browser media stream
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -35,40 +42,52 @@ class AudioController {
         }
       });
 
-      // 2. Initialize Audio Context
+      // 2. Guard: check Web Audio API support
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      this.audioContext = new AudioContextClass();
-      
-      // Ensure AudioContext is resumed if browser autoplay policy suspended it
+      if (!AudioContextClass) {
+        const err = new Error("Web Audio API no disponible en este navegador.");
+        err.name = "UnsupportedError";
+        throw err;
+      }
+
+      // 3. Create or reuse AudioContext (avoids hitting browser limit of ~6 contexts)
+      if (!this.audioContext || this.audioContext.state === "closed") {
+        this.audioContext = new AudioContextClass();
+      }
+
+      // 4. Resume context if suspended (required by Chrome autoplay policy)
       if (this.audioContext.state === "suspended") {
         await this.audioContext.resume();
       }
 
       this.sampleRate = this.audioContext.sampleRate;
 
-      // 3. Create nodes
+      // 5. Safely tear down any previously connected nodes
+      try { if (this.source) this.source.disconnect(); } catch (e) {}
+      try { if (this.lowpassFilter) this.lowpassFilter.disconnect(); } catch (e) {}
+      try { if (this.analyser) this.analyser.disconnect(); } catch (e) {}
+
+      // 6. Create audio graph nodes
       this.source = this.audioContext.createMediaStreamSource(this.stream);
       this.analyser = this.audioContext.createAnalyser();
-      this.analyser.fftSize = this.bufferSize * 2; // For getFloat32TimeDomainData window size
+      this.analyser.fftSize = this.bufferSize * 2;
 
-      // 4. Create Low-Pass Filter
-      // Filtering out frequencies above 800Hz stabilizes the fundamental pitch.
       this.lowpassFilter = this.audioContext.createBiquadFilter();
       this.lowpassFilter.type = "lowpass";
       this.lowpassFilter.frequency.setValueAtTime(800, this.audioContext.currentTime);
       this.lowpassFilter.Q.setValueAtTime(1, this.audioContext.currentTime);
 
-      // 5. Connect graph: Mic -> Lowpass -> Analyser
+      // 7. Connect graph: Mic -> Lowpass -> Analyser
       this.source.connect(this.lowpassFilter);
       this.lowpassFilter.connect(this.analyser);
 
       this.isActive = true;
       this.frequencyHistory = [];
 
-      // 6. Notify caller that mic is live before starting the loop
+      // 8. Notify caller that mic is live
       if (onReady) onReady();
 
-      // 7. Start processing loop
+      // 9. Start processing loop
       const updatePitch = () => {
         if (!this.isActive) return;
         
