@@ -1,0 +1,5 @@
+/*
+  Permissions-Policy: microphone=*
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
