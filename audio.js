@@ -20,10 +20,11 @@ class AudioController {
 
   /**
    * Request microphone permission and initialize Web Audio API
-   * @param {Function} onPitchDetected - Callback for pitch data
+   * @param {Function} onReady - Callback fired once mic is granted and processing starts
+   * @param {Function} onPitchDetected - Callback for each pitch frame
    * @param {Function} onError - Callback for errors
    */
-  async start(onPitchDetected, onError) {
+  async start(onReady, onPitchDetected, onError) {
     try {
       // 1. Get browser media stream
       this.stream = await navigator.mediaDevices.getUserMedia({
@@ -64,7 +65,10 @@ class AudioController {
       this.isActive = true;
       this.frequencyHistory = [];
 
-      // 6. Start processing loop
+      // 6. Notify caller that mic is live before starting the loop
+      if (onReady) onReady();
+
+      // 7. Start processing loop
       const updatePitch = () => {
         if (!this.isActive) return;
         

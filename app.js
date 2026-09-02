@@ -258,20 +258,29 @@ class App {
   }
 
   startTuner() {
-    this.btnMicToggle.classList.add("recording");
-    this.btnMicText.textContent = "DETENER MICRÓFONO";
-    this.isRecording = true;
-    
+    // Show a pending state while waiting for browser permission
+    this.btnMicToggle.disabled = true;
+    this.btnMicText.textContent = "SOLICITANDO PERMISO...";
+
     this.audioController.start(
+      // onReady: called once the stream is open and processing starts
+      () => {
+        // Only update button state AFTER permission is granted
+        this.btnMicToggle.disabled = false;
+        this.btnMicToggle.classList.add("recording");
+        this.btnMicText.textContent = "DETENER MICRÓFONO";
+        this.isRecording = true;
+      },
       (freq) => this.handlePitch(freq),
       (err) => this.handleError(err)
     );
   }
 
   stopTuner() {
+    this.isRecording = false;
+    this.btnMicToggle.disabled = false;
     this.btnMicToggle.classList.remove("recording");
     this.btnMicText.textContent = "ACTIVAR MICRÓFONO";
-    this.isRecording = false;
     
     this.audioController.stop();
     this.resetTunerUI();
@@ -279,8 +288,59 @@ class App {
 
   handleError(err) {
     console.error("Mic Error:", err);
-    alert("No se pudo acceder al micrófono. Asegúrese de otorgar los permisos necesarios.");
-    this.stopTuner();
+    
+    // Determine the most helpful message for the user
+    let msg = "No se pudo acceder al micrófono.";
+    if (err && err.name === "NotAllowedError") {
+      msg = "Permiso de micrófono denegado. Por favor permití el acceso al micrófono en la configuración de tu navegador y recargá la página.";
+    } else if (err && err.name === "NotFoundError") {
+      msg = "No se detectó ningún micrófono en este dispositivo.";
+    } else if (err && err.name === "NotReadableError") {
+      msg = "El micrófono está siendo usado por otra aplicación. Cerrala e intentá de nuevo.";
+    }
+    
+    // Reset button without triggering another stop cycle
+    this.isRecording = false;
+    this.btnMicToggle.disabled = false;
+    this.btnMicToggle.classList.remove("recording");
+    this.btnMicText.textContent = "ACTIVAR MICRÓFONO";
+    this.audioController.stop();
+    this.resetTunerUI();
+
+    // Show error banner instead of blocking alert
+    this.showErrorBanner(msg);
+  }
+
+  showErrorBanner(msg) {
+    // Remove any existing banner
+    const existing = document.getElementById("error-banner");
+    if (existing) existing.remove();
+
+    const banner = document.createElement("div");
+    banner.id = "error-banner";
+    banner.style.cssText = [
+      "position: fixed",
+      "bottom: 24px",
+      "left: 50%",
+      "transform: translateX(-50%)",
+      "background: #c0392b",
+      "color: #fff",
+      "padding: 14px 24px",
+      "border-radius: 10px",
+      "font-family: inherit",
+      "font-size: 0.85rem",
+      "max-width: 90vw",
+      "text-align: center",
+      "z-index: 9999",
+      "box-shadow: 0 4px 20px rgba(0,0,0,0.5)",
+      "cursor: pointer"
+    ].join(";");
+    banner.textContent = msg + " (Tocá para cerrar)";
+    banner.addEventListener("click", () => banner.remove());
+    document.body.appendChild(banner);
+    
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => { if (banner.parentNode) banner.remove(); }, 8000);
   }
 
   handlePitch(freq) {
