@@ -24,23 +24,41 @@
   <div class="app-container">
     <main class="tuner-main">
       
-      <!-- Chromatic Visor Section (Top Tape & Readout) -->
-      <section class="chromatic-section">
-        <div class="chromatic-tape-viewport">
-          <div class="center-line"></div>
-          <div class="chromatic-tape" id="chromatic-tape">
-            <!-- Dynamically populated from JS -->
+      <!-- Main Tuner Big Card Box Section -->
+      <section class="tuner-visor-section">
+        <div class="main-tuner-card status-idle" id="main-tuner-card">
+          
+          <!-- Left Directional Arrow (Pitch High -> Tune Down / Aflojar) -->
+          <div class="arrow-indicator arrow-left" id="arrow-left" title="Aflojar / Bajar afinación">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+              <path d="M20 7.41L18.59 6l-6 6 6 6 1.41-1.41L15.42 12z"/>
+            </svg>
+            <span class="arrow-label">AFLOJAR</span>
           </div>
-        </div>
-        
-        <!-- Integrated Sub-Display under the tape -->
-        <div class="chromatic-sub-display">
-          <div class="sub-note-name" id="sub-note-name">--</div>
-          <div class="sub-info-line">
-            <span id="sub-freq">ESPERANDO SONIDO</span>
-            <span class="sub-divider">•</span>
-            <span id="sub-cents">--</span>
+
+          <!-- Card Central Content -->
+          <div class="tuner-card-content">
+            <div class="tuner-string-label" id="tuner-string-label">MODO CROMÁTICO</div>
+            <div class="tuner-main-note" id="tuner-main-note">--</div>
+            <div class="tuner-latin-note" id="tuner-latin-note">Esperando sonido</div>
+            
+            <div class="tuner-sub-info">
+              <span id="tuner-freq">-- Hz</span>
+              <span class="tuner-divider">•</span>
+              <span id="tuner-cents">--</span>
+            </div>
           </div>
+
+          <!-- Right Directional Arrow (Pitch Low -> Tune Up / Apretar) -->
+          <div class="arrow-indicator arrow-right" id="arrow-right" title="Apretar / Subir afinación">
+            <span class="arrow-label">APRETAR</span>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+              <path d="M4 16.59L5.41 18l6-6-6-6L4 7.41 8.58 12z"/>
+            </svg>
+          </div>
+
         </div>
       </section>
 

@@ -17,13 +17,16 @@ class App {
     // DOM Elements Cache
     this.btnMicToggle = document.getElementById("btn-mic-toggle");
     this.btnMicText = document.getElementById("btn-mic-text");
-    this.chromaticTape = document.getElementById("chromatic-tape");
     
-    // Sub-display elements directly under top tape
-    this.chromaticSubDisplay = document.querySelector(".chromatic-sub-display");
-    this.subNoteName = document.getElementById("sub-note-name");
-    this.subFreq = document.getElementById("sub-freq");
-    this.subCents = document.getElementById("sub-cents");
+    // Main Tuner Card Elements
+    this.mainTunerCard = document.getElementById("main-tuner-card");
+    this.tunerStringLabel = document.getElementById("tuner-string-label");
+    this.tunerMainNote = document.getElementById("tuner-main-note");
+    this.tunerLatinNote = document.getElementById("tuner-latin-note");
+    this.tunerFreq = document.getElementById("tuner-freq");
+    this.tunerCents = document.getElementById("tuner-cents");
+    this.arrowLeft = document.getElementById("arrow-left");
+    this.arrowRight = document.getElementById("arrow-right");
     
     // Strings & Tuning Elements
     this.stringsSection = document.getElementById("strings-section");
@@ -40,16 +43,13 @@ class App {
     // 1. Register Service Worker for PWA
     this.registerServiceWorker();
 
-    // 2. Initialize Chromatic Tape ticks
-    this.initChromaticTape();
-
-    // 3. Populate Instrument Selector
+    // 2. Populate Instrument Selector
     this.populateInstruments();
 
-    // 4. Bind Event Listeners
+    // 3. Bind Event Listeners
     this.bindEvents();
 
-    // 5. Set Initial State (Default Chromatic Mode)
+    // 4. Set Initial State (Default Chromatic Mode)
     this.updateInstrument("guitar6");
     this.resetTunerUI();
   }
@@ -68,39 +68,6 @@ class App {
     }
   }
 
-  initChromaticTape() {
-    this.chromaticTape.innerHTML = "";
-    
-    for (let m = MIN_MIDI; m <= MAX_MIDI; m++) {
-      const details = window.getNoteDetails(m);
-      const tick = document.createElement("div");
-      tick.className = "note-tick";
-      tick.setAttribute("id", `tick-${m}`);
-      tick.setAttribute("data-midi", m);
-      
-      const latinName = window.NOTE_NAMES_ES_DISPLAY[details.noteIndex];
-      const enName = details.en;
-      
-      tick.innerHTML = `
-        <span class="tick-label-latin">${latinName}</span>
-        <span class="tick-line"></span>
-        <span class="tick-label-en">${enName}</span>
-      `;
-      this.chromaticTape.appendChild(tick);
-    }
-    
-    this.scrollTapeToMidi(60);
-  }
-
-  scrollTapeToMidi(midiValue) {
-    const tapeViewport = document.querySelector(".chromatic-tape-viewport");
-    const viewportWidth = tapeViewport.clientWidth;
-    
-    const indexOffset = midiValue - MIN_MIDI;
-    const pxOffset = (viewportWidth / 2) - (indexOffset * SEMITONE_WIDTH);
-    
-    this.chromaticTape.style.transform = `translateX(${pxOffset}px)`;
-  }
 
   populateInstruments() {
     this.selectInstrument.innerHTML = "";
@@ -371,40 +338,63 @@ class App {
     const roundedMidi = Math.round(midiNote);
     const centsDeviation = Math.round((midiNote - roundedMidi) * 100);
     const noteDetails = window.getNoteDetails(midiNote);
-    
-    // 2. Center and update Chromatic sliding scale
-    this.scrollTapeToMidi(midiNote);
-    
-    // Highlight active tick in the tape
-    document.querySelectorAll(".note-tick").forEach(tick => {
-      tick.classList.remove("active", "tuned", "flat-sharp");
-    });
-    const activeTick = document.getElementById(`tick-${roundedMidi}`);
-    if (activeTick) {
-      activeTick.classList.add("active");
-      if (Math.abs(centsDeviation) <= 3) {
-        activeTick.classList.add("tuned");
+    const isTuned = Math.abs(centsDeviation) <= 3;
+    const sign = centsDeviation >= 0 ? "+" : "";
+
+    // 2. Identify string / note label
+    let stringLabelText = "MODO CROMÁTICO";
+
+    if (this.activeTuning) {
+      let minDistance = Infinity;
+      let matchedString = null;
+      
+      this.activeTuning.strings.forEach((str) => {
+        const dist = Math.abs(midiNote - str.midi);
+        if (dist < minDistance) {
+          minDistance = dist;
+          matchedString = str;
+        }
+      });
+
+      if (matchedString && minDistance <= 1.2) {
+        stringLabelText = `CUERDA ${matchedString.index}`;
       } else {
-        activeTick.classList.add("flat-sharp");
+        stringLabelText = "AFINANDO...";
       }
     }
 
-    // 3. Update top sub-display readout
-    this.subNoteName.textContent = `${noteDetails.en} / ${noteDetails.es}`;
-    this.subFreq.textContent = `${freq.toFixed(2)} Hz`;
-    
-    const sign = centsDeviation >= 0 ? "+" : "";
-    const isTuned = Math.abs(centsDeviation) <= 3;
-    
+    this.tunerStringLabel.textContent = stringLabelText;
+    this.tunerMainNote.textContent = noteDetails.en;
+    this.tunerLatinNote.textContent = noteDetails.es;
+    this.tunerFreq.textContent = `${freq.toFixed(2)} Hz`;
+
+    // 3. Main Card Status & Animation
+    // Out-of-tune (offpitch) -> Blinking Red
+    // In-tune (tuned) -> Fluorescent Yellow-Green
     if (isTuned) {
-      this.subCents.textContent = "AFINADO";
-      this.chromaticSubDisplay.className = "chromatic-sub-display tuned";
+      this.mainTunerCard.className = "main-tuner-card status-tuned";
+      this.tunerCents.textContent = "AFINADO";
     } else {
-      this.subCents.textContent = `${sign}${centsDeviation} cents`;
-      this.chromaticSubDisplay.className = "chromatic-sub-display flat-sharp";
+      this.mainTunerCard.className = "main-tuner-card status-offpitch";
+      this.tunerCents.textContent = `${sign}${centsDeviation} cents`;
     }
 
-    // 4. If target tuning selected, handle string detection & highlight
+    // 4. Directional Arrow Guidance
+    // centsDeviation < -3: Pitch too low -> Need to tighten (APRETAR) -> Right Arrow active
+    // centsDeviation > 3: Pitch too high -> Need to loosen (AFLOJAR) -> Left Arrow active
+    // isTuned: Both arrows active and glowing neon yellow-green
+    if (isTuned) {
+      this.arrowLeft.className = "arrow-indicator arrow-left active";
+      this.arrowRight.className = "arrow-indicator arrow-right active";
+    } else if (centsDeviation < -3) {
+      this.arrowLeft.className = "arrow-indicator arrow-left";
+      this.arrowRight.className = "arrow-indicator arrow-right active";
+    } else {
+      this.arrowLeft.className = "arrow-indicator arrow-left active";
+      this.arrowRight.className = "arrow-indicator arrow-right";
+    }
+
+    // 5. Highlight target string cards at bottom if preset active
     if (this.activeTuning) {
       this.handleStringAutoHighlight(midiNote, centsDeviation, freq);
     }
@@ -449,10 +439,15 @@ class App {
   }
 
   showSilenceState() {
-    this.subNoteName.textContent = "--";
-    this.subFreq.textContent = "ESPERANDO SONIDO";
-    this.subCents.textContent = "--";
-    this.chromaticSubDisplay.className = "chromatic-sub-display";
+    this.mainTunerCard.className = "main-tuner-card status-idle";
+    this.arrowLeft.className = "arrow-indicator arrow-left";
+    this.arrowRight.className = "arrow-indicator arrow-right";
+
+    this.tunerStringLabel.textContent = this.activeTuning ? "SELECCIONÁ / TOCÁ UNA CUERDA" : "MODO CROMÁTICO";
+    this.tunerMainNote.textContent = "--";
+    this.tunerLatinNote.textContent = "Esperando sonido";
+    this.tunerFreq.textContent = "-- Hz";
+    this.tunerCents.textContent = "--";
 
     document.querySelectorAll(".string-card").forEach((card) => {
       card.className = "string-card";
@@ -465,12 +460,7 @@ class App {
   }
 
   resetTunerUI() {
-    this.scrollTapeToMidi(60);
     this.showSilenceState();
-    
-    document.querySelectorAll(".note-tick").forEach(tick => {
-      tick.className = "note-tick";
-    });
   }
 }
 
