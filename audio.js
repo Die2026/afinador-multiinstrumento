@@ -109,6 +109,7 @@ class AudioController {
           stableFrequency = this.smoothFrequency(rawFrequency);
         } else {
           this.frequencyHistory = []; // Clear history on silence
+          this.smoothedFreq = -1;
         }
 
         onPitchDetected(stableFrequency);
@@ -161,30 +162,41 @@ class AudioController {
   }
 
   /**
-   * Smooths frequency readings using a moving window median/average
+   * Smooths frequency readings using median filtering, outlier rejection,
+   * and Exponential Moving Average (EMA) for liquid-smooth tuner response.
    * @param {number} freq 
    * @returns {number}
    */
   smoothFrequency(freq) {
     if (freq < 25 || freq > 2000) return -1;
 
+    // Reject extreme single-frame transient spikes (attack noise on pluck)
     if (this.frequencyHistory.length > 0) {
       const lastFreq = this.frequencyHistory[this.frequencyHistory.length - 1];
       const ratio = freq / lastFreq;
-      if (ratio > 1.3 || ratio < 0.7) {
-        this.frequencyHistory = [];
+      if (ratio > 1.35 || ratio < 0.65) {
+        return this.smoothedFreq > 0 ? this.smoothedFreq : lastFreq;
       }
     }
 
     this.frequencyHistory.push(freq);
-    if (this.frequencyHistory.length > this.historyLength) {
+    if (this.frequencyHistory.length > 8) {
       this.frequencyHistory.shift();
     }
 
+    // Median calculation over 8 samples
     const sorted = [...this.frequencyHistory].sort((a, b) => a - b);
     const median = sorted[Math.floor(sorted.length / 2)];
-    
-    return median;
+
+    // Exponential Moving Average (EMA) smoothing
+    if (!this.smoothedFreq || this.smoothedFreq <= 0) {
+      this.smoothedFreq = median;
+    } else {
+      const alpha = 0.22; // 22% new data, 78% historical smoothing -> fluid & stable
+      this.smoothedFreq = this.smoothedFreq * (1 - alpha) + median * alpha;
+    }
+
+    return this.smoothedFreq;
   }
 
   /**
